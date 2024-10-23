@@ -39,7 +39,11 @@ GPT_CONFIG_124M = {
         [x] Multihead Attention
         [x] FeedForward
 [ ] Data loader
-[ ] Training script
+[ ] Pretrain
+    [ ] Training script
+[ ] Save and load model
+    [ ] PyTorch
+    [ ] HuggingFace
 [ ] Evaluation
 [ ] Llama
 ```
