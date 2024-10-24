@@ -51,27 +51,29 @@ class MultiHeadAttention(nn.Module):
         queries = queries.transpose(1, 2)
         values = values.transpose(1, 2)
 
-        # Compute scaled dot-product attention (self-attention)
-        attn_scores = queries @ keys.transpose(
-            2, 3
-        )  # transpose keys last two dimensions (seq_len, head_dim) -> (head_dim, seq_len) to do dot product for each head
+        # Compute scaled dot-product attention (self-attention), transposing keys last two dimensions (seq_len, head_dim) -> (head_dim, seq_len)
+        ## queries (batch_size, n_heads, seq_len, head_dim) @ keys (batch_size, n_heads, head_dim, seq_len) -> attn_scores (batch_size, n_heads, seq_len, seq_len)
+        attn_scores = queries @ keys.transpose(2, 3)
 
         # Make a bookean mask from the original mask truncated to the seq_len of this batch
         mask_bool = self.mask.bool()[:seq_len, :seq_len]
-        # Apply the mask to the attention scores, fill the 1s with -inf to zero out the scores
+        # Apply the mask to the attention scores, fill the 1s with -inf to zero out the scores of future tokens
         attn_scores.masked_fill_(mask_bool, -torch.inf)
 
-        # Use softmax to calculate attention weights from scaled attention scores
+        # Scale the attention scores by the square root of the head dimensions so that softmax in the next step will not produce attention weights that are too small
+        # Use softmax to calculate attention weights from attention scores
         attn_weights = torch.softmax(attn_scores / keys.shape[-1] ** 0.5, dim=-1)
-        # Apply dropout to the attention weights
+        # Apply dropout to the attention weights to reduce overfitting
+        ## PyTorch's dropout function zeros out some elements of the input tensor with probability p and automatically scales the remaining elements by 1/(1-p)
         attn_weights = self.dropout(attn_weights)
 
-        # Calculate context vector applying attention weights to values
+        # Calculate context vector by matrix multiplication between attention weights and values
+        ## attn_weights (batch_size, n_heads, seq_len, seq_len) @ values (batch_size, n_heads, seq_len, head_dim) -> context_vec (batch_size, n_heads, seq_len, head_dim)
         context_vec = attn_weights @ values
         # transpose back n_heads and seq_len dimensions to prepare for head concatenation
-        ## (batch_size, n_heads, seq_len, head_dim) -> (batch_size, seq_len, n_heads, head_dim
+        ## (batch_size, n_heads, seq_len, head_dim) -> (batch_size, seq_len, n_heads, head_dim)
         context_vec = context_vec.transpose(1, 2)
-        # concatenate the heads
+        # concatenate the heads by reshaping to combine the last two dimensions into one (batch_size, seq_len, n_heads * head_dim)
         context_vec = context_vec.contiguous().view(batch_size, seq_len, self.d_out)
         # optional linear projection
         context_vec = self.out_proj(context_vec)
