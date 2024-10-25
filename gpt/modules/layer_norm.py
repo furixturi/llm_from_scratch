@@ -5,11 +5,11 @@ import torch.nn as nn
 class LayerNorm(nn.Module):
     def __init__(self, config):
         super().__init__()
-        emb_dim = config["embedding_dim"]
+        embedding_dim = config["embedding_dim"]
         self.eps = 1e-5  # epsilon, a small constant to avoid division by zero
         # two learnable parameter matrices to adjust the scaling and shifting to  best suit the data it is processing
-        self.scale = nn.Parameter(torch.ones(emb_dim))
-        self.shift = nn.Parameter(torch.zeros(emb_dim))
+        self.scale = nn.Parameter(torch.ones(embedding_dim))
+        self.shift = nn.Parameter(torch.zeros(embedding_dim))
 
     def forward(self, x):
         mean = x.mean(dim=-1, keepdim=True)  # calculate mean of the last dimension
