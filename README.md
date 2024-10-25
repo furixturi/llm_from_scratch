@@ -54,7 +54,7 @@ GPT_CONFIG_124M = {
     [x] Transformer block
         [x] Multihead Attention
         [x] FeedForward
-[ ] generate text
+[x] generate text
 [ ] Save and load model
     [ ] PyTorch
     [ ] HuggingFace
