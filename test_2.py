@@ -14,14 +14,6 @@ model_configs = {
     "gpt2-xl (1558M)": {"embedding_dim": 1600, "n_layers": 48, "n_heads": 25},
 }
 
-
-def test_load_gpt2_pretrained_weight(model_size, models_download_dir, model):
-    # download or print "File already exists and is up-to-date: {destination}"
-    download_gpt2_model(model_size=model_size, models_dir=models_download_dir)
-
-    load_gpt2_weights_into_model(model, "models/124M")
-
-
 if __name__ == "__main__":
     model_size = "124M"
     models_download_dir = "models"
