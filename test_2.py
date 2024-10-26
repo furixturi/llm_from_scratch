@@ -1,35 +1,49 @@
 import torch
 import tiktoken
 from gpt.gpt_model import GPTModel
+from utils.generate_text import generate_text_greedy
 
 
-def generate_text_simple(model, input_idx, max_new_tokens, context_size):
-    # input_idx shape: (batch_size, n_tokens) in the current context
+def test_model_generation(
+    model, input_text, tokenizer_encoding="gpt2", max_new_tokens=10, context_size=1024
+):
+    tokenizer = tiktoken.get_encoding(tokenizer_encoding)
 
-    # we will output the input tokens plus the generarted new tokens
-    output_idx = input_idx
-    # iterate over the number of new tokens to generate
-    for _ in range(max_new_tokens):
-        # in case the current tokens are longer than the model's supported context_size,
-        # crop the tokens in the front and preserve tokens that fit in the model's `context_size`
-        idx = output_idx[:, -context_size:]
+    input_idx = tokenizer.encode(input_text)
+    input_idx_batch = torch.tensor(input_idx).unsqueeze(0)  # add batch dimension‰
 
-        # get the model's prediction for the current context
-        with torch.no_grad():
-            logits = model(idx)
+    print(
+        f"""
+        {50 * '='}
+        {' ' * 22}IN
+        {50 * '='}
+        Input text: {input_text}
+        Encoded input text: {input_idx}
+        Encoded input tensor shape: {input_idx_batch.shape}
+        """
+    )
 
-        # predicted next token is at the last position of the logits, so we extract only the last token's logits.
-        ## logits shape: (batch_size, context_size, vocab_size) -> next_token_logits shape: (batch_size, vocab_size)
-        next_token_logits = logits[:, -1, :]
-        # to find the index of the token with the highest probability, we only need to find the index of the largest logit in the last dimension (vocab_size)
-        ## keepdim=True ensures that the output has the same shape as the input, except in the dimension where we take the argmax
-        next_token_idx = torch.argmax(
-            next_token_logits, dim=-1, keepdim=True
-        )  # shape: (batch_size, 1)
-        # concatenate the new token to the output
-        output_idx = torch.cat((output_idx, next_token_idx), dim=1)
+    output_idx_batch = generate_text_greedy(
+        model=model,
+        input_idx_batch=input_idx_batch,
+        max_new_tokens=max_new_tokens,
+        context_size=context_size,
+    )
+    output_idx = output_idx_batch.squeeze(0).tolist()
+    output_text = tokenizer.decode(output_idx)
 
-    return output_idx
+    print(
+        f"""
+        {50 * '='}
+        {' ' * 22}OUT
+        {50 * '='}
+        Encoded output tensor shape: {output_idx_batch.shape}
+        Encoded output text: {output_idx}
+        Output text: {output_text}
+        """
+    )
+
+    return output_text
 
 
 if __name__ == "__main__":
@@ -46,3 +60,13 @@ if __name__ == "__main__":
     torch.manual_seed(123)
     model = GPTModel(GPT_CONFIG_124M)
     model.eval()
+
+    print(
+        test_model_generation(
+            model=model,
+            input_text="Hi, I am a large language model",
+            tokenizer_encoding="gpt2",
+            max_new_tokens=10,
+            context_size=GPT_CONFIG_124M["context_length"],
+        )
+    )
