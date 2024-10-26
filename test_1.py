@@ -61,12 +61,11 @@ if __name__ == "__main__":
     model = GPTModel(GPT_CONFIG_124M)
     model.eval()
 
-    print(
-        test_model_generation(
-            model=model,
-            input_text="Hi, I am a large language model",
-            tokenizer_encoding="gpt2",
-            max_new_tokens=10,
-            context_size=GPT_CONFIG_124M["context_length"],
-        )
+    print("####### Test 1 : model generation #######")
+    test_model_generation(
+        model=model,
+        input_text="Hi, I am a large language model",
+        tokenizer_encoding="gpt2",
+        max_new_tokens=10,
+        context_size=GPT_CONFIG_124M["context_length"],
     )
