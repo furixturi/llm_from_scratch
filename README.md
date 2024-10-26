@@ -56,11 +56,15 @@ GPT_CONFIG_124M = {
         [x] FeedForward
 [x] generate text
 [ ] Save and load model
-    [ ] PyTorch
-    [ ] HuggingFace
-[ ] Data loader
+    [ ] download and load weights
+        [x] PyTorch
+        [-] HuggingFace
+    [ ] save model
 [ ] Pretrain
+    [ ] Calculate loss
+    [ ] Data preprocess and load
     [ ] Training script
+    [ ] Advanced training script
 [ ] Evaluation
 [ ] Llama
 [ ] Fine-tune

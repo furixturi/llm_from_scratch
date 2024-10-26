@@ -5,7 +5,7 @@ from gpt.gpt2_utils.load_gpt2_weights import (
     load_gpt2_model_settings_and_params,
     load_gpt2_weights_into_model,
 )
-from test_1 import test_model_generation
+from utils.test_model_generation import test_model_generation
 
 model_configs = {
     "gpt2-small (124M)": {"embedding_dim": 768, "n_layers": 12, "n_heads": 12},
