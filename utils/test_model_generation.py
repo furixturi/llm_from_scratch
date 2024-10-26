@@ -1,6 +1,6 @@
 import torch
 import tiktoken
-from utils.generate_text import generate_text_greedy
+from utils.generate_tokens import generate_tokens_greedy
 
 
 def test_model_generation(
@@ -22,7 +22,7 @@ def test_model_generation(
         """
     )
 
-    output_idx_batch = generate_text_greedy(
+    output_idx_batch = generate_tokens_greedy(
         model=model,
         input_idx_batch=input_idx_batch,
         max_new_tokens=max_new_tokens,

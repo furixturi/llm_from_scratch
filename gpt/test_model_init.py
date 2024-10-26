@@ -3,7 +3,7 @@ import tiktoken
 from gpt.gpt_model import GPTModel
 
 
-def generate_text_simple(model, input_idx, max_new_tokens, context_size):
+def generate_tokens_simple(model, input_idx, max_new_tokens, context_size):
     # input_idx shape: (batch_size, n_tokens) in the current context
 
     # we will output the input tokens plus the generarted new tokens

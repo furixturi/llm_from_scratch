@@ -1,9 +1,9 @@
 import torch
 
 
-# based on the generate_text_simple function in scratchpad2 notebook
+# based on the generate_tokens_simple function in scratchpad2 notebook
 # Greedy sampling, always take the predicted next token with the highest logit (probability)
-def generate_text_greedy(model, input_idx_batch, max_new_tokens, context_size):
+def generate_tokens_greedy(model, input_idx_batch, max_new_tokens, context_size):
     # input_idx shape: (batch_size, n_tokens) in the current context
 
     # we will output the input tokens plus the generarted new tokens
