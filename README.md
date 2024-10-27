@@ -55,17 +55,18 @@ GPT_CONFIG_124M = {
         [x] Multihead Attention
         [x] FeedForward
 [x] generate text
+[ ] advanced generate text
 [ ] Save and load model
     [ ] download and load weights
         [x] PyTorch
         [-] HuggingFace
     [ ] save model
 [ ] Pretrain
-    [ ] Calculate loss
-    [ ] Data preprocess and load
-    [ ] Training script
+    [x] Calculate loss
+    [x] Data preprocess and load
+    [x] Training script
+    [x] Plot train/val loss
     [ ] Advanced training script
-[ ] Evaluation
 [ ] Llama
 [ ] Fine-tune
 ```
