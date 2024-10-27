@@ -5,6 +5,8 @@ from tqdm import tqdm
 
 # download file from url to destination, showing progress bar
 def download_file(url, destination):
+    # Create the destination directory if it doesn't exist
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
     # Send a GET request to download the file in streaming mode
     response = requests.get(url, stream=True)
 
