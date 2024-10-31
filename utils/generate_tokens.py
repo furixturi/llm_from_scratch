@@ -30,3 +30,61 @@ def generate_tokens_greedy(model, input_idx_batch, max_new_tokens, context_size)
         output_idx_batch = torch.cat((output_idx_batch, next_token_idx_batch), dim=1)
 
     return output_idx_batch
+
+
+# with top-k sampling, temprature sacling, and taking EOS token into account
+def generate_tokens(
+    model,
+    input_idx,  # (batch_size, n_tokens)
+    max_new_tokens,
+    context_size,
+    temperature=0.0,
+    top_k=None,
+    eos_id=None,
+):
+    output_idx = input_idx
+    for _ in range(max_new_tokens):
+        # crop tokens in the front if the whole sequence is longer than the context size
+        idx = output_idx[:, -context_size:]  # (batch_size, context_size)
+        with torch.no_grad():
+            logits = model(idx)  # (batch_size, context_size, vocab_size)
+        last_token_logits = logits[:, -1, :]  # (batch_size, vocab_size)
+
+        # top-k sampling
+        if top_k is not None:
+            top_logits, _ = torch.topk(
+                last_token_logits, top_k, dim=-1
+            )  # (batch_size, top_k)
+            min_top_k = top_logits[:, -1]  # (batch_size,)
+            last_token_logits = torch.where(  # torch.where creates a new tensor from two tensors (input and other) based on a condition on the input tensor's device
+                last_token_logits < min_top_k,  # condition
+                torch.tensor(float("-inf")).to(
+                    last_token_logits.device
+                ),  # "input", when condition is True. (The new tensor will be created in its device so we need to put it to the same device as last_token_logits)
+                last_token_logits,  # "other", when condition is False
+            )
+
+        # temperature scaling
+        if temperature > 0.0:
+            last_token_logits = (
+                last_token_logits / temperature
+            )  # (batch_size, vocab_size)
+            probs = torch.softmax(
+                last_token_logits, dim=-1
+            )  # (batch_size,  vocab_size)
+            next_token_idx = torch.multinomial(probs, num_samples=1)  # (batch_size, 1)
+        else:
+            next_token_idx = torch.argmax(
+                last_token_logits, dim=-1, keepdim=True
+            )  # (batch_size, 1)
+
+        # support for EOS token
+        if next_token_idx == eos_id:
+            break
+
+        # concatenate the new token to the output
+        output_idx = torch.cat(
+            (output_idx, next_token_idx), dim=1
+        )  # (batch_size, n_tokens + 1)
+
+    return output_idx
