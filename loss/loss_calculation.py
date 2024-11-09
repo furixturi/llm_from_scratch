@@ -21,6 +21,9 @@ def calc_loss_loader_avg(
     num_batches=None,
     batch_loss_fn=calc_loss_batch_cross_entropy,
 ):
+    """
+    Calculate the average loss of a model on a data loader's first num_batches data batches.
+    """
     if device is None:
         device = get_default_device()
 
