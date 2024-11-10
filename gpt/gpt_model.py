@@ -4,6 +4,24 @@ import torch.nn as nn
 from gpt.modules.layer_norm import LayerNorm
 from gpt.modules.transformer_block import TransformerBlock
 
+#  Example config:
+# BASE_CONFIG = {
+#     "vocab_size": 50257,     # Vocabulary size
+#     "context_length": 1024,  # Context length
+#     "dropout_rate": 0.0,        # Dropout rate
+#     "qkv_bias": True         # Query-key-value bias
+# }
+
+# model_configs = {
+#     "gpt2-small (124M)": {"embedding_dim": 768, "n_layers": 12, "n_heads": 12},
+#     "gpt2-medium (355M)": {"embedding_dim": 1024, "n_layers": 24, "n_heads": 16},
+#     "gpt2-large (774M)": {"embedding_dim": 1280, "n_layers": 36, "n_heads": 20},
+#     "gpt2-xl (1558M)": {"embedding_dim": 1600, "n_layers": 48, "n_heads": 25},
+# }
+
+# CHOSEN_MODEL = "gpt2-small (124M)"
+# model_config = {**BASE_CONFIG, **model_configs[CHOSEN_MODEL]}
+
 
 class GPTModel(nn.Module):
     def __init__(self, config):
