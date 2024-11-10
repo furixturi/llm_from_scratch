@@ -2,6 +2,8 @@ import torch
 import math
 from loss.loss_calculation import calc_loss_batch_cross_entropy, calc_loss_loader_avg
 from utils.get_device import get_default_device
+from utils.test_model_generation import test_model_generation
+from utils.benchmark import print_memory_usage
 
 
 def train_model_simple(
@@ -14,6 +16,7 @@ def train_model_simple(
     eval_freq=5,  # intermediate evaluate every eval_freq number of global steps
     eval_iter=5,  # intermediate evaluation calculates average loss over the first eval_iter batches in the data loader
     epoch_fn=None,  # function to call at the end of each epoch
+    start_context="The meaning of life is",
 ):
     if device is None:
         device = get_default_device()
@@ -24,11 +27,16 @@ def train_model_simple(
 
     # main training loop
     for epoch in range(num_epochs):
+        if device.type == "cuda":
+            # torch.cuda.reset_accumulated_memory_stats()
+            torch.cuda.reset_peak_memory_stats()
         # set model to training mode
         model.train()
 
         # iterate over each batch
         for input_batch, target_batch in train_loader:
+            if device.type == "cuda" or device.type == "mps":
+                print(f"=== Global step: {global_step} ===")
             # reset loss gradients from last batch
             optimizer.zero_grad()
 
@@ -36,8 +44,16 @@ def train_model_simple(
             loss = calc_loss_batch_cross_entropy(
                 input_batch, target_batch, model, device
             )
+            if device.type == "cuda" or device.type == "mps":
+                print_memory_usage(device=device, tag="After forward pass")
+
             loss.backward()
+            if device.type == "cuda" or device.type == "mps":
+                print_memory_usage(device=device, tag="After backward pass")
+
             optimizer.step()
+            if device.type == "cuda" or device.type == "mps":
+                print_memory_usage(device=device, tag="After optimization step")
 
             # keep track and intermediate evaluation of average losses across multiple batches
             num_tokens_seen += input_batch.numel()
@@ -64,6 +80,10 @@ def train_model_simple(
         # call epoch function if provided
         if epoch_fn is not None:
             epoch_fn(epoch, model, train_losses, val_losses, track_tokens_seen, device)
+        else:
+            if device.type == "cuda" or device.type == "mps":
+                print_memory_usage(device=device, tag=f"Epoch {epoch} end")
+            test_model_generation(model=model, input_text=start_context)
 
     return train_losses, val_losses, track_tokens_seen
 
