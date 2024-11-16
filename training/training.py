@@ -3,7 +3,7 @@ import math
 from loss.loss_calculation import calc_loss_batch_cross_entropy, calc_loss_loader_avg
 from utils.get_device import get_default_device
 from utils.test_model_generation import test_model_generation
-from utils.benchmark import print_memory_usage
+from utils.benchmark import print_memory_usage, collect_memory_usage
 
 
 def train_model_simple(
@@ -19,45 +19,79 @@ def train_model_simple(
     start_context="The meaning of life is",
 ):
     if device is None:
-        device = get_default_device()
+        device = get_default_device()  # "cuda", "mps", or "cpu"
+
+    memory_statistics = {"device": device, "statistics": []}
 
     # keep track of intermediate evaluation losses and tokens seen
     train_losses, val_losses, track_tokens_seen = [], [], []
-    num_tokens_seen, global_step = 0, -1
+    num_tokens_seen, global_step = 0, 0
 
     # main training loop
     for epoch in range(num_epochs):
+
         if device.type == "cuda":
             # torch.cuda.reset_accumulated_memory_stats()
             torch.cuda.reset_peak_memory_stats()
+
         # set model to training mode
         model.train()
 
         # iterate over each batch
         for input_batch, target_batch in train_loader:
-            if device.type == "cuda" or device.type == "mps":
-                print(f"=== Global step: {global_step} ===")
-            # reset loss gradients from last batch
+            step_memory_statistics = {
+                "global_step": global_step,
+            }
+            if global_step % eval_freq == 0:
+                print(
+                    f"\nEpoch: {epoch}, Global step: {global_step} \n"
+                    f"\n=== Memory Usage ===\n"
+                )
+
             optimizer.zero_grad()
 
             # calculate loss, backpropogate to get gradients, and update model weights
+            ## Forward pass
             loss = calc_loss_batch_cross_entropy(
                 input_batch, target_batch, model, device
             )
-            if device.type == "cuda" or device.type == "mps":
+            step_memory_statistics["after_forward_pass"] = collect_memory_usage(
+                device=device
+            )
+            if (
+                global_step % eval_freq == 0
+                and device.type == "cuda"
+                or device.type == "mps"
+            ):
                 print_memory_usage(device=device, tag="After forward pass")
 
+            ## Backward pass
             loss.backward()
-            if device.type == "cuda" or device.type == "mps":
+            step_memory_statistics["after_backward_pass"] = collect_memory_usage(
+                device=device
+            )
+            if (
+                global_step % eval_freq == 0
+                and device.type == "cuda"
+                or device.type == "mps"
+            ):
                 print_memory_usage(device=device, tag="After backward pass")
 
+            ## Update weights
             optimizer.step()
-            if device.type == "cuda" or device.type == "mps":
+            step_memory_statistics["after_optimization_step"] = collect_memory_usage(
+                device=device
+            )
+            if (
+                global_step % eval_freq == 0
+                and device.type == "cuda"
+                or device.type == "mps"
+            ):
                 print_memory_usage(device=device, tag="After optimization step")
 
             # keep track and intermediate evaluation of average losses across multiple batches
             num_tokens_seen += input_batch.numel()
-            global_step += 1
+
             if global_step % eval_freq == 0:
                 model.eval()
                 with torch.no_grad():
@@ -71,11 +105,13 @@ def train_model_simple(
                     val_losses.append(val_loss)
                     track_tokens_seen.append(num_tokens_seen)
                     print(
-                        f"Epoch: {epoch}, Global step: {global_step}, "
+                        f"=== Evaluation ===\n"
                         f"Tokens seen: {num_tokens_seen}, "
                         f"Train loss: {train_loss:.4f}, Validation loss: {val_loss:.4f}"
                     )
                 model.train()
+            memory_statistics["statistics"].append(step_memory_statistics)
+            global_step += 1
 
         # call epoch function if provided
         if epoch_fn is not None:
@@ -83,9 +119,9 @@ def train_model_simple(
         else:
             if device.type == "cuda" or device.type == "mps":
                 print_memory_usage(device=device, tag=f"Epoch {epoch} end")
-            test_model_generation(model=model, input_text=start_context)
+            test_model_generation(model=model, input_text=start_context, device=device)
 
-    return train_losses, val_losses, track_tokens_seen
+    return train_losses, val_losses, track_tokens_seen, memory_statistics
 
 
 # LLM training with learning rate warmup, cosine decay, and gradient clipping

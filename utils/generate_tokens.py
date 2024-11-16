@@ -1,9 +1,13 @@
 import torch
-
+from utils.get_device import get_default_device
 
 # based on the generate_tokens_simple function in scratchpad2 notebook
 # Greedy sampling, always take the predicted next token with the highest logit (probability)
-def generate_tokens_greedy(model, input_idx_batch, max_new_tokens, context_size):
+def generate_tokens_greedy(model, input_idx_batch, max_new_tokens, context_size, device=None):
+    if device is None:
+        device = get_default_device()
+    model.to(device)
+    input_idx_batch.to(device)
     # input_idx shape: (batch_size, n_tokens) in the current context
 
     # we will output the input tokens plus the generarted new tokens
